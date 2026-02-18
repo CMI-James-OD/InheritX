@@ -30,7 +30,6 @@
 //     Ok(())
 // }
 
-
-fn main(){
+fn main() {
     println(main)
 }
