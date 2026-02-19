@@ -667,11 +667,7 @@ impl InheritanceContract {
     }
 
     /// Approve a user's KYC after off-chain verification (admin-only).
-    pub fn approve_kyc(
-        env: Env,
-        admin: Address,
-        user: Address,
-    ) -> Result<(), InheritanceError> {
+    pub fn approve_kyc(env: Env, admin: Address, user: Address) -> Result<(), InheritanceError> {
         Self::require_admin(&env, &admin)?;
 
         let key = DataKey::Kyc(user.clone());
