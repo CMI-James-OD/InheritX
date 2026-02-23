@@ -3,6 +3,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use chrono::Utc;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde_json::json;
 use tower::ServiceExt;
@@ -32,7 +33,10 @@ async fn plan_creation_rolls_back_on_transfer_revert() {
     .await
     .expect("Failed to set KYC approved");
 
-    let exp = (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize;
+    let exp = Utc::now()
+        .checked_add_signed(chrono::Duration::hours(24))
+        .expect("valid timestamp")
+        .timestamp() as usize;
     let token = encode(
         &Header::default(),
         &inheritx_backend::auth::UserClaims {

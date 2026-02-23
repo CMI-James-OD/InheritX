@@ -300,6 +300,15 @@ impl PlanService {
             .await?
             .ok_or_else(|| ApiError::NotFound(format!("Plan {} not found", plan_id)))?;
 
+        if !Self::is_due_for_claim(
+            plan.distribution_method.as_deref(),
+            plan.contract_created_at,
+        ) {
+            return Err(ApiError::BadRequest(
+                "Plan is not yet mature for claim".to_string(),
+            ));
+        }
+
         let contract_plan_id = plan.contract_plan_id.unwrap_or(0_i64);
 
         let currency = plan
