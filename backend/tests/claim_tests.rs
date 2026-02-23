@@ -1,25 +1,26 @@
 mod helpers;
 
-use serde_json::{json, Value};
-use uuid::Uuid;
-use jsonwebtoken::{encode, EncodingKey, Header};
-use chrono::{Utc, Duration};
+use chrono::{Duration, Utc};
 use inheritx_backend::auth::UserClaims;
+use jsonwebtoken::{encode, EncodingKey, Header};
+use serde_json::{json, Value};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use uuid::Uuid;
 
 fn generate_test_token(user_id: Uuid, email: &str) -> String {
     let claims = UserClaims {
         user_id,
         email: email.to_string(),
     };
-    
+
     // Using the hardcoded secret from auth.rs
     encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(b"secret_key_change_in_production"),
-    ).unwrap()
+    )
+    .unwrap()
 }
 
 #[tokio::test]
@@ -61,7 +62,7 @@ async fn test_claim_before_maturity_returns_400() {
             distribution_method, contract_created_at, currency_preference
         ) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        "#
+        "#,
     )
     .bind(plan_id)
     .bind(user_id)
@@ -80,17 +81,20 @@ async fn test_claim_before_maturity_returns_400() {
     // 4. Start server
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
-    
+
     tokio::spawn(async move {
-        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-            .await
-            .unwrap();
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .unwrap();
     });
 
     // 5. Attempt to claim
     let token = generate_test_token(user_id, &email);
     let client = reqwest::Client::new();
-    
+
     let response = client
         .post(format!("http://{}/api/plans/{}/claim", addr, plan_id))
         .header("Authorization", format!("Bearer {}", token))
@@ -104,5 +108,8 @@ async fn test_claim_before_maturity_returns_400() {
     // 6. Assertions
     assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
     let body: Value = response.json().await.unwrap();
-    assert_eq!(body["error"], "Bad Request: Plan is not yet mature for claim");
+    assert_eq!(
+        body["error"],
+        "Bad Request: Plan is not yet mature for claim"
+    );
 }
